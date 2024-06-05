@@ -34,6 +34,7 @@ I have created this Java-based digital signer tool to sign PDF documents using a
 ## Prerequisites
 - Java `javaRuntime-8` (*32-bit*)
 - A valid digital signature certificate in `PFX` format issued by a valid CA.
+- Application `eDastakhat` JAR file [Download from the Release section](https://github.com/code-muni/eDastakhat/releases)
 
 ## Usage
 
