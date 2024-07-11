@@ -10,15 +10,34 @@ import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
+import java.util.HashMap;
+import java.util.Map;
 
 
 import static com.pyojan.eDastakhat.libs.Response.generateErrorResponse;
+import static com.pyojan.eDastakhat.libs.Response.generateSuccessResponse;
 
 public class EDastakhatApplication {
 
     public static void main(String[] args) {
 
+        HashMap<String, String> versionDetails = new HashMap<>();
+        versionDetails.put("version", "0.0.1");
+
         try {
+
+            // Check if no arguments are provided
+            if (args.length == 0) {
+                throw new IllegalArgumentException("No arguments provided. Use -HELP or -H for usage instructions.");
+            }
+
+            if("-v".equalsIgnoreCase(args[0]) || "-V".equalsIgnoreCase((args[0])) || "-version".equalsIgnoreCase(args[0])) {
+                generateSuccessResponse("SUCCESS", versionDetails);
+                return;
+            }
+
+
+
             if ("-HELP".equalsIgnoreCase(args[0]) || "-H".equalsIgnoreCase(args[0])) {
                 EDastakhatApplication.copyFile();
                 printHelp();
