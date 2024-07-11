@@ -49,6 +49,7 @@ java -jar /path/to/EDastakhatApplication.jar <ACTION_TYPE> <JSON_PAYLOAD_FILE_PA
   - `-HELP` or `-H`: Display help messages and provide examples of payloads files.
 - `<JSON_PAYLOAD_FILE_PATH>`: The path to the JSON file containing the payload with details about the PFX file or the PDF signing process. This JSON file must be correctly formatted according to the type of action being performed.
 - `[RESULT_SAVE_DIR_PATH]` (Optional): The directory path where the result will be saved. If this argument is not provided, the result will be saved in the same directory as the JSON payload file.
+- `v` or `-V` or `-version`: Displays the current version of the application and exits.
 
 > **IMPORTANT NOTE**: By providing these arguments correctly, the application will execute the desired action, process the provided payload, and save the results as specified.
 
@@ -58,6 +59,11 @@ java -jar /path/to/EDastakhatApplication.jar <ACTION_TYPE> <JSON_PAYLOAD_FILE_PA
 - `-HELP` or `-H`: Display help messages and provide payload examples.
 
 ### Examples
+- **To display the version of the application:**
+```bash
+    java -jar /path/to/EDastakhatApplication.jar -v
+- ```
+
 - **To process a PFX file:**
 ```bash
 java -jar /path/to/EDastakhatApplication.jar -P /path/of/PFX-Payload.json
