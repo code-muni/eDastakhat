@@ -62,7 +62,7 @@ java -jar /path/to/EDastakhatApplication.jar <ACTION_TYPE> <JSON_PAYLOAD_FILE_PA
 - **To display the version of the application:**
 ```bash
     java -jar /path/to/EDastakhatApplication.jar -v
-- ```
+```
 
 - **To process a PFX file:**
 ```bash
