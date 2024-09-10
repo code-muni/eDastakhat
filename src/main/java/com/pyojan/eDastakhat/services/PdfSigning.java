@@ -10,6 +10,9 @@ import com.pyojan.eDastakhat.models.SignatureModel;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.net.HttpURLConnection;
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -20,6 +23,7 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Base64;
 import java.util.HashMap;
+import java.util.Random;
 
 import static com.pyojan.eDastakhat.libs.Response.generateErrorResponse;
 import static com.pyojan.eDastakhat.libs.Response.generateSuccessResponse;
@@ -29,6 +33,7 @@ import static com.pyojan.eDastakhat.libs.Response.generateSuccessResponse;
  */
 public class PdfSigning {
 
+    private final Random random = new Random();
     private SignatureModel signatureModel;
     private String outDir;
 
@@ -103,7 +108,7 @@ public class PdfSigning {
                 signDataMap.put("fileName", fileName);
                 signDataMap.put("filePath", savedPath);
 
-                generateSuccessResponse("SUCCESS", signDataMap);
+                generateSuccessResponse(signDataMap);
             }
 
         } catch (GeneralSecurityException | IOException e) {
@@ -114,19 +119,25 @@ public class PdfSigning {
     private Rectangle getSignatureRectangle(int[] coordinates) {
         return new Rectangle(coordinates[0], coordinates[1], coordinates[2], coordinates[3]);
     }
-
     private String sign(PdfReader reader, PrivateKey privateKey, String provider, Certificate[] certChain, int pageNumber, boolean isTimestamp, boolean isChangesAllowed, Rectangle rectangle) {
         ByteArrayOutputStream signedPdfOutputStream = new ByteArrayOutputStream();
         PdfStamper stamper = null;
+        TSAClient tsaClient = null;
+        String tsaUrl = null;
+        String errorMessage = null;
 
         try {
             SignatureModel.Options options = signatureModel.getOptions();
             stamper = PdfStamper.createSignature(reader, signedPdfOutputStream, '\0', null, true);
 
+            if (isTimestamp) {
+                tsaUrl = validateTsaUrl(options.getTimestamp().getUrl());
+                tsaClient = new TSAClientBouncyCastle(tsaUrl, options.getTimestamp().getUsername(), options.getTimestamp().getPassword(), 8192, "SHA-256");
+            }
+
             PdfSignatureAppearance appearance = getPdfSignatureAppearance(stamper, rectangle, pageNumber,
-                    String.format("eDastakhat::PAGE:%d", pageNumber), isChangesAllowed,
+                    String.format("eDastakhat__P_%d_%d", pageNumber, random.nextInt(900000)), isChangesAllowed,
                     options.getReason(), options.getLocation(), options.isGreenTick());
-            TSAClient tsaClient = !isTimestamp ? null : new TSAClientBouncyCastle(options.getTimestamp().getUrl(), options.getTimestamp().getUsername(), options.getTimestamp().getPassword(), 8192, "SHA-256");
 
             ExternalDigest digest = new BouncyCastleDigest();
             ExternalSignature signature = new PrivateKeySignature(privateKey, DigestAlgorithms.SHA256, provider);
@@ -142,16 +153,21 @@ public class PdfSigning {
                     0,
                     MakeSignature.CryptoStandard.CADES
             );
+
         } catch (DocumentException | IOException | GeneralSecurityException e) {
-            generateErrorResponse(e);
+            errorMessage = "ERROR: " + e.getMessage();
         } finally {
             if (stamper != null) {
                 try {
                     stamper.close();
                 } catch (DocumentException | IOException e) {
-                    generateErrorResponse(e);
+                    errorMessage = "ERROR: " + e.getMessage();
                 }
             }
+        }
+
+        if (errorMessage != null) {
+            generateErrorResponse(new Exception(errorMessage));
         }
 
         return Base64.getEncoder().encodeToString(signedPdfOutputStream.toByteArray());
@@ -238,5 +254,38 @@ public class PdfSigning {
 
         // Return the path as a string
         return path.toString();
+    }
+
+    /**
+     * Checks if the given TSA URL is valid and accessible.
+     *
+     * @param tsaUrl The TSA URL to check.
+     * @return The TSA URL if it is valid and accessible.
+     * @throws IllegalArgumentException if tsaUrl is null or malformed.
+     * @throws IOException if an I/O error occurs while checking the TSA URL.
+     */
+    public String validateTsaUrl (String tsaUrl) throws IllegalArgumentException, IOException {
+        if (tsaUrl == null) {
+            throw new IllegalArgumentException("The TSA URL cannot be null.");
+        }
+
+        try {
+            URL url = new URL(tsaUrl);
+            HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+            connection.setRequestMethod("HEAD"); // Use HEAD method to check URL availability without downloading the content
+            connection.setConnectTimeout(5000); // Set timeout for connection
+            connection.setReadTimeout(5000); // Set timeout for reading response
+
+            int responseCode = connection.getResponseCode();
+            // Check if the response code is in the range of 200-299 (HTTP OK range)
+            if (responseCode < HttpURLConnection.HTTP_OK || responseCode >= HttpURLConnection.HTTP_BAD_REQUEST) {
+                throw new IOException("TSA URL is not valid or not accessible.");
+            }
+        } catch (Exception e) {
+            throw new IllegalArgumentException("TSA URL is not valid or not accessible.");
+        }
+
+        // If no errors occurred, return the valid URL
+        return tsaUrl;
     }
 }

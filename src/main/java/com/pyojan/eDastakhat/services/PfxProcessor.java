@@ -34,25 +34,33 @@ public class PfxProcessor {
         }
     }
 
-    public void readPfx(String pfxContentJSONFilePath, String vaultRootDir) {
-        Path path = Paths.get(pfxContentJSONFilePath);
-        String vaultPath = path.getParent().resolve(".vault").toString();
-        try {
-            PfxJSONContentModel pfxModel = getPfxModel(path);
+    public void readPfx(String pfxFilePath, String pfxPass, String vaultRootDir) {
+        if (pfxFilePath == null) {
+            throw new IllegalArgumentException("The PFX file path cannot be null.");
+        }
 
-            String pfx64 = pfxModel.getPfx();
-            String pass = pfxModel.getPassword();
-            if (pfx64 == null) throw new RuntimeException("PFX base64 is null in json file");
+        Path path = Paths.get(pfxFilePath);
 
-            byte[] pfxBytes = Base64.getDecoder().decode(pfx64);
-            keyStore.load(new ByteArrayInputStream(pfxBytes), pass.toCharArray());
+        // Check if the file exists and is accessible
+        if (Files.notExists(path) || !Files.isReadable(path)) {
+            throw new IllegalArgumentException("The PFX file does not exist or is not accessible: " + pfxFilePath);
+        }
 
+        String vaultPath = path.getParent().resolve("eDastkhatVault").toString();
+
+        try (InputStream pfxInputStream = Files.newInputStream(path)) {
+            // Load the PFX file into a new KeyStore instance
+            char[] pass = pfxPass.toCharArray();
+            KeyStore keyStore = KeyStore.getInstance("PKCS12");
+            keyStore.load(pfxInputStream, pass);
+
+            // Get the X509 Certificate from the KeyStore
             X509Certificate x509Certificate = getX509Certificate(keyStore);
 
             String certSerialNumber = x509Certificate.getSerialNumber().toString(16).toUpperCase();
-            String rootDir = (vaultRootDir == null) ? vaultPath + certSerialNumber : vaultRootDir + "/.vault/" + certSerialNumber;
+            String rootDir = (vaultRootDir == null) ? String.format("%s/%s", vaultPath, certSerialNumber) : vaultRootDir + "/eDastkhatVault/" + certSerialNumber;
 
-            copyPfxToJks(pass, rootDir);
+            copyPfxToJks(keyStore, new String(pass), rootDir);  // Pass keyStore instance here
 
             generateStdoutResponseOfPfx(x509Certificate);
 
@@ -62,8 +70,7 @@ public class PfxProcessor {
         }
     }
 
-    private void copyPfxToJks(String pfxPassword, String filePath) throws KeyStoreException, UnrecoverableKeyException, NoSuchAlgorithmException, IOException, CertificateException {
-
+    private void copyPfxToJks(KeyStore keyStore, String pfxPassword, String filePath) throws KeyStoreException, UnrecoverableKeyException, NoSuchAlgorithmException, IOException, CertificateException {
         // Ensure directory exists
         File directory = new File(filePath).getParentFile();
         if (!directory.exists() && !directory.mkdirs()) {
@@ -80,7 +87,6 @@ public class PfxProcessor {
                 java.security.cert.Certificate[] certificateChain = keyStore.getCertificateChain(alias);
                 jksKeyStore.setKeyEntry(alias, privateKey, pfxPassword.toCharArray(), certificateChain);
             }
-
         }
 
         try (OutputStream outputStream = Files.newOutputStream(Paths.get(filePath))) {
@@ -109,7 +115,7 @@ public class PfxProcessor {
         String[] issuerParts = issuerName.split(",");
         result.put("issuer", extractAttribute(issuerParts[2], "O"));
 
-        generateSuccessResponse("SUCCESS", result);
+        generateSuccessResponse(result);
 
     }
 

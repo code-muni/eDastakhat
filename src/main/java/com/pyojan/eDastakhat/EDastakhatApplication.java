@@ -11,7 +11,6 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.util.HashMap;
-import java.util.Map;
 
 
 import static com.pyojan.eDastakhat.libs.Response.generateErrorResponse;
@@ -22,7 +21,7 @@ public class EDastakhatApplication {
     public static void main(String[] args) {
 
         HashMap<String, String> versionDetails = new HashMap<>();
-        versionDetails.put("version", "0.0.1");
+        versionDetails.put("version", "1.0.0");
 
         try {
 
@@ -32,42 +31,32 @@ public class EDastakhatApplication {
             }
 
             if("-v".equalsIgnoreCase(args[0]) || "-V".equalsIgnoreCase((args[0])) || "-version".equalsIgnoreCase(args[0])) {
-                generateSuccessResponse("SUCCESS", versionDetails);
+                generateSuccessResponse(versionDetails);
                 return;
             }
-
-
 
             if ("-HELP".equalsIgnoreCase(args[0]) || "-H".equalsIgnoreCase(args[0])) {
                 EDastakhatApplication.copyFile();
                 printHelp();
             } else {
-                if (args.length < 2 || args.length > 3) {
-                    throw new IllegalArgumentException("Invalid number of arguments. Usage: java Main <ACTION_TYPE> <JSON_PAYLOAD_FILE_PATH> [RESULT_SAVE_DIR_PATH]");
+                if (args.length < 2 || args.length > 4) {
+                    throw new IllegalArgumentException("Invalid number of arguments. Expected between 2 and 4 arguments.");
                 }
 
                 String action = args[0];
                 String filePath = args[1];
                 String resultSaveDirPath = (args.length == 3 && !args[2].isEmpty()) ? args[2] : null;
 
-                if (resultSaveDirPath != null) {
-                    File resultDir = new File(resultSaveDirPath);
-                    if (!resultDir.isDirectory()) {
-                        throw new IllegalArgumentException("Result save directory path must be a directory.");
-                    }
-                }
+                if(action.equalsIgnoreCase("-P") || action.equalsIgnoreCase("-PFX")) {
+                    String pfxFilePath = args[1];
+                    String password = args[2];
+                    String outputDist = (args.length == 4 && args[3] != null && !args[3].isEmpty()) ? args[3] : null;
 
-                switch (action.toUpperCase()) {
-                    case "-PFX":
-                    case "-P":
-                        new PfxProcessor().readPfx(filePath, resultSaveDirPath);
-                        break;
-                    case "-SIGNATURE":
-                    case "-S":
-                        new PdfSigning(filePath, resultSaveDirPath).executeSign();
-                        break;
-                    default:
-                        throw new IllegalArgumentException("Invalid action type: " + action);
+                    new PfxProcessor().readPfx(pfxFilePath, password, outputDist);
+                } else if (action.equalsIgnoreCase("-S") || action.equalsIgnoreCase("SIGNATURE")) {
+                    new PdfSigning(filePath, resultSaveDirPath).executeSign();
+                } else  {
+                    throw new IllegalArgumentException("Invalid action type: " + action);
                 }
             }
         } catch (IllegalArgumentException | IOException | URISyntaxException e ) {
@@ -76,7 +65,7 @@ public class EDastakhatApplication {
     }
 
     private static void copyFile() throws IOException, URISyntaxException {
-        String[] payloadFileNames = {"PFX-Payload.json", "Sign-Payload.json"};
+        String[] payloadFileNames = {"Sign-Payload.json"};
         for(String sourceFilename : payloadFileNames) {
             URL resource = EDastakhatApplication.class.getClassLoader().getResource("examples/" +sourceFilename);
             if(resource == null) return;
@@ -86,17 +75,43 @@ public class EDastakhatApplication {
 
 
     private static void printHelp() {
-        System.out.println("Usage: java -jar /path/to/EDastakhatApplication.jar <ACTION_TYPE> <JSON_PAYLOAD_FILE_PATH> [RESULT_SAVE_DIR_PATH]");
+        System.out.println("Usage: java -jar /path/to/application.jar <ACTION_TYPE> <ARGUMENTS>");
+        System.out.println();
         System.out.println("ACTION_TYPE:");
-        System.out.println("  [ -PFX or -P              ]   Process PFX file and secure PFX.");
-        System.out.println("  [ -SIGNATURE or -S        ]   Sign PDF file");
-        System.out.println("  [ -HELP or -H             ]   Display this help messages, and provide payload examples.");
-        System.out.println("  [ JSON_PAYLOAD_FILE_PATH  ]   Path to the JSON file containing PFX secure  or PDF signing content information");
-        System.out.println("  [ RESULT_SAVE_DIR_PATH    ]   (Optional). Result will be saved here; if not provided, it will be saved in the JSON payload path.");
+        System.out.println("  -P, -p  Process a PFX file and secure it.");
+        System.out.println("          Usage: java -jar /path/to/application.jar -p <pfxFilePath.pfx> [<pfxPassword>] [<outputFileDir>]");
+        System.out.println("          <pfxFilePath.pfx>     Required: Path to the PFX file.");
+        System.out.println("          <pfxPassword>         Password for the PFX file.");
+        System.out.println("          <outputFileDir>       Optional: Directory where the processed PFX will be saved.");
+        System.out.println("                                 - If not provided, the file will be saved in the same folder as the source PFX file.");
+        System.out.println();
+        System.out.println("  -S, -s  Sign a PDF file using a signature payload JSON.");
+        System.out.println("          Usage: java -jar /path/to/application.jar -s <signaturePayloadJsonFile.json> [<outputFileDir>]");
+        System.out.println("          <signaturePayloadJsonFile.json>  Required: Path to the JSON file containing the signature payload.");
+        System.out.println("          <outputFileDir>                 Optional: Path where the signed PDF will be saved.");
+        System.out.println("                                            - If not provided, the signed file will be saved in the same folder as the JSON file.");
+        System.out.println();
+        System.out.println("  -v      Display the version of the application.");
+        System.out.println("          Usage: java -jar /path/to/application.jar -v");
+        System.out.println();
+        System.out.println("  -H, -h  Display this help message.");
+        System.out.println("          Usage: java -jar /path/to/application.jar -h");
+        System.out.println();
         System.out.println("EXAMPLES:");
-        System.out.println("  java -jar /path/to/EDastakhatApplication.jar -P /path/of/PFX-Payload.json");
-        System.out.println("  java -jar /path/to/EDastakhatApplication.jar -S /path/of/PDF-Payload.json");
-        System.out.println("Example files are find on the same directory as this application.");
+        System.out.println("  Process a PFX file:");
+        System.out.println("    java -jar /path/to/application.jar -p /path/to/file.pfx myPassword /path/to/output/dir");
+        System.out.println();
+        System.out.println("  Sign a PDF file:");
+        System.out.println("    java -jar /path/to/application.jar -s /path/to/signaturePayload.json /path/to/signedOutputDir");
+        System.out.println();
+        System.out.println("  Display version:");
+        System.out.println("    java -jar /path/to/application.jar -v");
+        System.out.println();
+        System.out.println("  Display help:");
+        System.out.println("    java -jar /path/to/application.jar -h");
+        System.out.println();
+        System.out.println("Note: Example files can be found in the same directory as the application.");
     }
+
 
 }

@@ -10,7 +10,7 @@
     </parent>
     <groupId>com.pyojan</groupId>
     <artifactId>eDastakhat</artifactId>
-    <version>0.0.1-SNAPSHOT</version>
+    <version>1.0.0-SNAPSHOT</version>
     <name>eDastakhat</name>
     <description>An all-in-one cross-platform application for seamless PDF signing, supporting Windows, Linux, and Mac.
         Utilize USB crypto tokens or PFX files, while also offering a secure vault to store PFX files for added

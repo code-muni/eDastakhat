@@ -20,7 +20,7 @@ public class Response<T> {
         this.data = data;
     }
 
-    public static void generateSuccessResponse(String status, HashMap<String, String> data) {
+    public static void generateSuccessResponse(HashMap<String, String> data) {
         Response<HashMap<String, String>> response = new Response<>("SUCCESS", data);
         String json = jsonPrinter.toJson(response);
         System.out.println(json);
