@@ -1,0 +1,26 @@
+{
+  "certInfo": {
+    "pfxPath": "/path/to/certificate.pfx",
+    "password": "password123"
+  },
+  "options": {
+    "page": "L",
+    "coord": [0, 0, 0, 0],
+    "reason": "Signing document",
+    "location": "New York",
+    "customText": "Approved by John Doe",
+    "greenTick": true,
+    "changesAllowed": false,
+    "timestamp": {
+      "enabled": true,
+      "url": "https://timestamp.server.com",
+      "username": "user123",
+      "password": "pass123"
+    },
+    "enableLtv": true
+  },
+  "pdf": {
+    "base64Content": "base64EncodedContent",
+    "password": "pdfPassword"
+  }
+}
