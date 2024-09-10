@@ -3,7 +3,6 @@ package com.pyojan.eDastakhat;
 import com.pyojan.eDastakhat.services.PdfSigning;
 import com.pyojan.eDastakhat.services.PfxProcessor;
 
-import java.io.File;
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.net.URL;

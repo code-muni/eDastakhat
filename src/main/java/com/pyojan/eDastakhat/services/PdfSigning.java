@@ -11,7 +11,6 @@ import com.pyojan.eDastakhat.models.SignatureModel;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.net.HttpURLConnection;
-import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -123,7 +122,7 @@ public class PdfSigning {
         ByteArrayOutputStream signedPdfOutputStream = new ByteArrayOutputStream();
         PdfStamper stamper = null;
         TSAClient tsaClient = null;
-        String tsaUrl = null;
+        String tsaUrl;
         String errorMessage = null;
 
         try {

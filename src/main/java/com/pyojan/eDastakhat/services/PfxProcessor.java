@@ -12,7 +12,6 @@ import java.nio.file.Paths;
 import java.security.*;
 import java.security.cert.*;
 import java.security.cert.Certificate;
-import java.util.Base64;
 import java.util.Date;
 import java.util.Enumeration;
 import java.util.HashMap;
@@ -21,14 +20,13 @@ import static com.pyojan.eDastakhat.libs.Response.*;
 
 public class PfxProcessor {
     private static final Gson jsonPrinter = new GsonBuilder().setPrettyPrinting().create();
-    private KeyStore keyStore;
 
 
     public PfxProcessor() {
         try {
             BouncyCastleProvider provider = new BouncyCastleProvider();
             Security.addProvider(provider);
-            keyStore = KeyStore.getInstance("PKCS12");
+            KeyStore keyStore = KeyStore.getInstance("PKCS12");
         } catch (KeyStoreException e) {
             generateErrorResponse(e);
         }
@@ -118,15 +116,6 @@ public class PfxProcessor {
         generateSuccessResponse(result);
 
     }
-
-    private PfxJSONContentModel getPfxModel(Path pfxContentJSONFilePath) throws IOException {
-        if (!Files.exists(pfxContentJSONFilePath)) {
-            throw new IOException("The provided argument '" + pfxContentJSONFilePath + "' must be a valid file path, but either the path is incorrect or the file does not exist.");
-        }
-        String content = new String(Files.readAllBytes(pfxContentJSONFilePath));
-        return jsonPrinter.fromJson(content, PfxJSONContentModel.class);
-    }
-
 
     public X509Certificate getX509Certificate(KeyStore keyStore) throws KeyStoreException, CertificateException {
         X509Certificate x509Certificate = null;
